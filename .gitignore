@@ -1,0 +1,8 @@
+**/.vs/**
+**/.vscode/**
+**/.idea/**
+**/output/**
+**/bin/**
+**/obj/**
+*.DotSettings.user
+asm/*.o
