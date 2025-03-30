@@ -2,13 +2,14 @@ using System;
 
 namespace Program;
 
-internal static partial class Program
+public static class InputHelpers
 {
-	private enum InputTransformation
+	public enum InputTransformation
 	{
-		UpperNybbleXor, // xor'd with $C, return upper nybble
-		LowerNybbleXor, // xor'd with $C, return lower nybble
+		UpperNybbleXorC, // xor'd with $C, return upper nybble
+		LowerNybbleXorC, // xor'd with $C, return lower nybble
 		LowerNybbleRaw, // raw lower nybble
+		LowerNybbleXor7, // raw lower nybble
 	}
 
 	[Flags]
@@ -20,14 +21,14 @@ internal static partial class Program
 		Start = 0x08,
 	}
 
-	private static string CreateInputStringFromByte(int inputLength, byte b, InputTransformation inputTransformation)
+	public static string CreateInputStringFromByte(int inputLength, byte b, InputTransformation inputTransformation)
 	{
 		if (inputLength > 35112)
 		{
 			throw new InvalidOperationException("Input length is too large!");
 		}
 
-		if (inputTransformation == InputTransformation.UpperNybbleXor)
+		if (inputTransformation == InputTransformation.UpperNybbleXorC)
 		{
 			b >>= 4;
 		}
@@ -36,9 +37,14 @@ internal static partial class Program
 			b &= 0xF;
 		}
 
-		if (inputTransformation is InputTransformation.UpperNybbleXor or InputTransformation.LowerNybbleXor)
+		if (inputTransformation is InputTransformation.UpperNybbleXorC or InputTransformation.LowerNybbleXorC)
 		{
 			b ^= 0xC;
+		}
+
+		if (inputTransformation is InputTransformation.LowerNybbleXor7)
+		{
+			b ^= 0x7;
 		}
 
 		// note: 0 is pressed

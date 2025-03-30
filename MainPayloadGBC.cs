@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.Versioning;
+
+using static Program.InputHelpers;
 
 namespace Program;
 
-internal static partial class Program
+[SupportedOSPlatform("windows")]
+internal static class MainPayloadGBC
 {
 	private static int _imageIndex;
 	private static int _imageByteIndex;
@@ -209,7 +213,7 @@ internal static partial class Program
 		if (_imageIndex < 0 || // have not yet begun the video ("warmup period" before HL is reset)
 		    _pulseIndex >= _audioPcmLength) // audio is over
 		{
-			return _pulseLut[0x80];
+			return (byte)((_pulseLut[0x80] << 4) | (_pulseLut[0x80] & 0xF));
 		}
 
 		var sample0 = _audioPcm8Data[_pulseIndex++];
@@ -222,7 +226,7 @@ internal static partial class Program
 		if (_imageIndex < 0 || // have not yet begun the video ("warmup period" before HL is reset)
 		    _mvIndex >= _audioPcmLength) // audio is over
 		{
-			return _mvLut[0x80];
+			return (byte)(_mvLut[0x80] & 0x7);
 		}
 
 		var sample = _audioPcm8Data[_mvIndex++];
@@ -239,8 +243,8 @@ internal static partial class Program
 	private static void LoadSample(StreamWriter sw, int initialCycles, int endCycles)
 	{
 		var samples = GetWaveChannelByte();
-		var f1 = CreateInputStringFromByte(initialCycles + 5, samples, InputTransformation.UpperNybbleXor);
-		var f2 = CreateInputStringFromByte(6 + endCycles, samples, InputTransformation.LowerNybbleXor);
+		var f1 = CreateInputStringFromByte(initialCycles + 5, samples, InputTransformation.UpperNybbleXorC);
+		var f2 = CreateInputStringFromByte(6 + endCycles, samples, InputTransformation.LowerNybbleXorC);
 		sw.WriteLine(f1);
 		sw.WriteLine(f2);
 	}
@@ -248,8 +252,8 @@ internal static partial class Program
 	private static void JoypadToHli(StreamWriter sw, int initialCycles, int endCycles)
 	{
 		var tileData = GetNextTileDataByte();
-		var f1 = CreateInputStringFromByte(initialCycles + 5, tileData, InputTransformation.UpperNybbleXor);
-		var f2 = CreateInputStringFromByte(5 + endCycles, tileData, InputTransformation.LowerNybbleXor);
+		var f1 = CreateInputStringFromByte(initialCycles + 5, tileData, InputTransformation.UpperNybbleXorC);
+		var f2 = CreateInputStringFromByte(5 + endCycles, tileData, InputTransformation.LowerNybbleXorC);
 		sw.WriteLine(f1);
 		sw.WriteLine(f2);
 	}
@@ -257,14 +261,14 @@ internal static partial class Program
 	private static byte JoypadFirstHalfToE(StreamWriter sw, int extraCycles)
 	{
 		var tileData = GetNextTileDataByte();
-		var f = CreateInputStringFromByte(extraCycles + 5, tileData, InputTransformation.UpperNybbleXor);
+		var f = CreateInputStringFromByte(extraCycles + 5, tileData, InputTransformation.UpperNybbleXorC);
 		sw.WriteLine(f);
 		return tileData;
 	}
 
 	private static void JoypadEToHli(StreamWriter sw, int extraCycles, byte tileData)
 	{
-		var f = CreateInputStringFromByte(extraCycles + 5, tileData, InputTransformation.LowerNybbleXor);
+		var f = CreateInputStringFromByte(extraCycles + 5, tileData, InputTransformation.LowerNybbleXorC);
 		sw.WriteLine(f);
 	}
 
@@ -466,7 +470,7 @@ internal static partial class Program
 		JoypadToHli(sw, 0, 1+2+4);
 	}
 
-	private static void CreateMainPayload()
+	public static void CreateMainPayload()
 	{
 		LoadReducedImagesAs2BPP();
 		LoadAudio();
@@ -527,7 +531,7 @@ internal static partial class Program
 				LoopedScanlineGdma(sw);
 			}
 
-			// frame 3
+			// frame 2
 
 			// LY 0
 			UnrolledScanlinePrepLcdc(sw);
